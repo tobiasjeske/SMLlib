@@ -1,0 +1,47 @@
+# Setup compiler options
+IF (MSVC)
+    # switch Visual Studio multi-processor compilation on
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /MP")
+
+    #  avoid warnings @windows about unsafe functions (sprintf,...)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_CRT_SECURE_NO_WARNINGS")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /D_CRT_SECURE_NO_WARNINGS")
+ELSEIF (AVR)
+    SET(CSTANDARD "-std=gnu99")
+    SET(CDEBUG "-gstabs")
+    SET(CWARN "-Wall -Wstrict-prototypes")
+    SET(CTUNING "-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums")
+    SET(COPT "-Os")
+    SET(CINCS "-I${Candi_SOURCE_DIR}/libarduino")
+    SET(CMCU "-mmcu=atmega644")
+    SET(CDEFS "-DF_CPU=16000000")
+
+    SET(CFLAGS "${CMCU} ${CDEBUG} ${CDEFS} ${CINCS} ${COPT} ${CWARN} ${CSTANDARD} ${CEXTRA}")
+    SET(CXXFLAGS "${CMCU} ${CDEFS} ${CINCS} ${COPT}")
+
+    SET(CMAKE_C_FLAGS ${CFLAGS})
+    SET(CMAKE_CXX_FLAGS ${CXXFLAGS})
+ELSE (MSVC)
+    # usually linux builds
+    SET(GCC_WARNINGS "-Wall -Wextra -pedantic -Wconversion -Wshadow -Wformat=2 -Winit-self -Wswitch-enum")
+    IF (NOT OPENWRT)
+        IF (NOT APPLE) # Apple's XCode4 with GCC 4.2 doesn't support -Wlogical-op
+          SET(GCC_WARNINGS "${GCC_WARNINGS} -Wlogical-op")
+        ENDIF ()
+    ENDIF ()
+    # these settings doesn't work with the android NDK
+    IF (NOT ANDROID)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++98")
+        SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -std=c89")
+    ENDIF ()
+    IF (GCOV)
+        # compile with extra stuff for gcov (-> for determining coverage)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -ggdb3 ${GCC_WARNINGS} -g -W -Wunused-variable -Wunused-parameter -Wunused-function -Wunused -Wno-system-headers -Wno-deprecated -Woverloaded-virtual -Wwrite-strings -fprofile-arcs -ftest-coverage")
+        SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -O0 -ggdb3 ${GCC_WARNINGS} -g -W -fprofile-arcs -ftest-coverage")
+        SET(CMAKE_LD_FLAGS  "${CMAKE_LD_FLAGS} -fprofile-arcs -ftest-coverage")
+    ELSE ()
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -ggdb3 ${GCC_WARNINGS}")
+        SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Os ${GCC_WARNINGS}")
+    ENDIF ()
+ENDIF (MSVC)
